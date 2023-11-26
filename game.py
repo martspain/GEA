@@ -12,7 +12,7 @@ class Game:
     self.runningGame = False
     self.mainCharacterSpritesheet = None
 
-  def load_main_character_spritesheet(self, path: str):
+  def load_spritesheet(self, path: str):
     spriteSheet = pygame.image.load(path).convert_alpha()
     return spriteSheet
 
@@ -22,9 +22,17 @@ class Game:
     screen = pygame.display.set_mode((self.width, self.height))
     pygame.display.set_caption(self.name)
 
-    self.mainCharacterSpritesheet = self.load_main_character_spritesheet("assets/sprites/main_character/MarkFront.png")
+    # Background Sprites
+    bgSpriteSheet = self.load_spritesheet("assets/sprites/background/Background.png")
+    bg_sprite_sheet = SpriteSheet(bgSpriteSheet)
+    bg_sprite_sheet.get_all_frames(8, 1, 80, 60, 10)
+
+    bg_animation = bg_sprite_sheet.get_action_frames([0,1,2,3,4,5,6,7,8])
+
+    # Character Sprites
+    self.mainCharacterSpritesheet = self.load_spritesheet("assets/sprites/main_character/MarkFront.png")
     sprite_sheet = SpriteSheet(self.mainCharacterSpritesheet)
-    sprite_sheet.get_all_frames(4, 8, 8, 8, 15)
+    sprite_sheet.get_all_frames(4, 8, 8, 8, 5)
 
     # Animation List
     animations = {
@@ -38,10 +46,12 @@ class Game:
       "right": sprite_sheet.get_action_frames([24,25,26,27,28,29])
     }
 
+    # Animation timer
     # self.currentState = "right"
     animation_cooldown = 250 # ms
     last_update = pygame.time.get_ticks()
     currentFrame = 0
+    bg_currentFrame = 0
 
     self.runningGame = True
 
@@ -53,36 +63,41 @@ class Game:
       currentTime = pygame.time.get_ticks()
 
       if currentTime - last_update >= animation_cooldown:
+        if bg_currentFrame < len(bg_animation)-1:
+          bg_currentFrame += 1
+        else:
+          bg_currentFrame = 0
         if currentFrame < len(animations[self.currentState])-1:
           currentFrame += 1
         else:
           currentFrame = 0
         last_update = currentTime
 
-      screen.blit(animations[self.currentState][currentFrame], (100, 100))
+      screen.blit(bg_animation[bg_currentFrame], (0, 0))
+      screen.blit(animations[self.currentState][currentFrame], (200, 200))
       
       # Handle Events
       for event in pygame.event.get():
         if event.type == pygame.QUIT:
           self.runningGame = False
         if event.type == pygame.KEYDOWN:
-          if event.key == pygame.K_LEFT:
+          if event.key == pygame.K_LEFT or event.key == pygame.K_a:
             self.currentState = "left"
-          if event.key == pygame.K_RIGHT:
+          if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
             self.currentState = "right"
-          if event.key == pygame.K_DOWN:
+          if event.key == pygame.K_DOWN or event.key == pygame.K_s:
             self.currentState = "down"
-          if event.key == pygame.K_UP:
+          if event.key == pygame.K_UP or event.key == pygame.K_w:
             self.currentState = "up"
           currentFrame = 0
         if event.type == pygame.KEYUP:
-          if event.key == pygame.K_LEFT:
+          if event.key == pygame.K_LEFT or event.key == pygame.K_a:
             self.currentState = "idleLeft"
-          if event.key == pygame.K_RIGHT:
+          if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
             self.currentState = "idleRight"
-          if event.key == pygame.K_DOWN:
+          if event.key == pygame.K_DOWN or event.key == pygame.K_s:
             self.currentState = "idle"
-          if event.key == pygame.K_UP:
+          if event.key == pygame.K_UP or event.key == pygame.K_w:
             self.currentState = "idleUp"
           currentFrame = 0
       
