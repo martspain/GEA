@@ -8,6 +8,12 @@ class Game:
     self.height = height
     self.bg_color = bg_color
     self.currentState = "idle"
+    self.playerPosition = (50, 500)
+    self.playerVelocity = 0.5
+    self.playerWidth = 8
+    self.playerHeight = 8
+    self.playerScale = 5
+    self.currentMovement = []
 
     self.runningGame = False
     self.mainCharacterSpritesheet = None
@@ -15,6 +21,21 @@ class Game:
   def load_spritesheet(self, path: str):
     spriteSheet = pygame.image.load(path).convert_alpha()
     return spriteSheet
+
+  def update_player_position(self):
+    if self.currentMovement.count("left") > 0:
+      if self.playerPosition[0] - self.playerVelocity >= 0:
+        self.playerPosition = (self.playerPosition[0] - self.playerVelocity, self.playerPosition[1])
+    if self.currentMovement.count("right") > 0:
+      if self.playerPosition[0] + self.playerVelocity + self.playerWidth <= self.width - self.playerWidth * 3:
+        self.playerPosition = (self.playerPosition[0] + self.playerVelocity, self.playerPosition[1])
+    if self.currentMovement.count("down") > 0:
+      if self.playerPosition[1] + self.playerVelocity + self.playerHeight <= self.height - self.playerHeight * 4:
+        self.playerPosition = (self.playerPosition[0], self.playerPosition[1] + self.playerVelocity)
+    if self.currentMovement.count("up") > 0:
+      if self.playerPosition[1] - self.playerVelocity >= 0:
+        self.playerPosition = (self.playerPosition[0], self.playerPosition[1] - self.playerVelocity)
+
 
   def run(self):
     pygame.init()
@@ -32,7 +53,7 @@ class Game:
     # Character Sprites
     self.mainCharacterSpritesheet = self.load_spritesheet("assets/sprites/main_character/MarkFront.png")
     sprite_sheet = SpriteSheet(self.mainCharacterSpritesheet)
-    sprite_sheet.get_all_frames(4, 8, 8, 8, 5)
+    sprite_sheet.get_all_frames(4, 8, self.playerWidth, self.playerHeight, self.playerScale)
 
     # Animation List
     animations = {
@@ -62,6 +83,8 @@ class Game:
       # Update animations frame
       currentTime = pygame.time.get_ticks()
 
+      self.update_player_position()
+
       if currentTime - last_update >= animation_cooldown:
         if bg_currentFrame < len(bg_animation)-1:
           bg_currentFrame += 1
@@ -74,7 +97,7 @@ class Game:
         last_update = currentTime
 
       screen.blit(bg_animation[bg_currentFrame], (0, 0))
-      screen.blit(animations[self.currentState][currentFrame], (200, 200))
+      screen.blit(animations[self.currentState][currentFrame], self.playerPosition)
       
       # Handle Events
       for event in pygame.event.get():
@@ -82,23 +105,39 @@ class Game:
           self.runningGame = False
         if event.type == pygame.KEYDOWN:
           if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-            self.currentState = "left"
+            if self.currentMovement.count("right") == 0:
+              self.currentState = "left"
+            self.currentMovement.append("left")
           if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-            self.currentState = "right"
+            if self.currentMovement.count("left") == 0:
+              self.currentState = "right"
+            self.currentMovement.append("right")
           if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-            self.currentState = "down"
+            if self.currentMovement.count("up") == 0:
+              self.currentState = "down"
+            self.currentMovement.append("down")
           if event.key == pygame.K_UP or event.key == pygame.K_w:
-            self.currentState = "up"
+            if self.currentMovement.count("down") == 0:
+              self.currentState = "up"
+            self.currentMovement.append("up")
           currentFrame = 0
         if event.type == pygame.KEYUP:
           if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-            self.currentState = "idleLeft"
+            if len(self.currentMovement) == 1:
+              self.currentState = "idleLeft"
+            self.currentMovement.remove("left")
           if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-            self.currentState = "idleRight"
+            if len(self.currentMovement) == 1:
+              self.currentState = "idleRight"
+            self.currentMovement.remove("right")
           if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-            self.currentState = "idle"
+            if len(self.currentMovement) == 1:
+              self.currentState = "idle"
+            self.currentMovement.remove("down")
           if event.key == pygame.K_UP or event.key == pygame.K_w:
-            self.currentState = "idleUp"
+            if len(self.currentMovement) == 1:
+              self.currentState = "idleUp"
+            self.currentMovement.remove("up")
           currentFrame = 0
       
       pygame.display.update()
